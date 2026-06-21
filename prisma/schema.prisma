@@ -51,8 +51,8 @@ model BriefSchedule {
   notionPageId          String
   notionTokenEncrypted  String
   isEnabled             Boolean              @default(true)
-  llmBaseUrl            String               @default("https://api.deepseek.com/v1")
-  llmModelName          String               @default("deepseek-chat")
+  llmBaseUrl            String               @default("https://api.deepseek.com")
+  llmModelName          String               @default("deepseek-v4-flash")
   llmApiKeyEncrypted    String               @default("")
   userName              String               @default("")
   aiPersona             String               @default("")

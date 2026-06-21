@@ -102,8 +102,8 @@ export default function BriefEditorPage(props: { params: Promise<{ briefId: stri
   const [notionPageId, setNotionPageId] = useState("");
   const [notionToken, setNotionToken] = useState("");
   const [showNotionToken, setShowNotionToken] = useState(false);
-  const [llmBaseUrl, setLlmBaseUrl] = useState("https://api.deepseek.com/v1");
-  const [llmModelName, setLlmModelName] = useState("deepseek-chat");
+  const [llmBaseUrl, setLlmBaseUrl] = useState("https://api.deepseek.com");
+  const [llmModelName, setLlmModelName] = useState("deepseek-v4-flash");
   const [llmApiKey, setLlmApiKey] = useState("");
   const [showLlmApiKey, setShowLlmApiKey] = useState(false);
   const [userName, setUserName] = useState("");
@@ -120,6 +120,7 @@ export default function BriefEditorPage(props: { params: Promise<{ briefId: stri
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Helper to parse "0 7 * * *" into hour=7, minute=0
   const parseCron = (cron: string) => {
@@ -163,8 +164,8 @@ export default function BriefEditorPage(props: { params: Promise<{ briefId: stri
         setUserId(data.brief.userId);
         setLogs(data.brief.logs || []);
         setAvailableModules(data.availableModules || []);
-        setLlmBaseUrl(data.brief.llmBaseUrl || "https://api.deepseek.com/v1");
-        setLlmModelName(data.brief.llmModelName || "deepseek-chat");
+        setLlmBaseUrl(data.brief.llmBaseUrl || "https://api.deepseek.com");
+        setLlmModelName(data.brief.llmModelName || "deepseek-v4-flash");
         setLlmApiKey(data.brief.llmApiKeyEncrypted || "");
         setUserName(data.brief.userName || "");
         setAiPersona(data.brief.aiPersona || "");
@@ -240,6 +241,24 @@ export default function BriefEditorPage(props: { params: Promise<{ briefId: stri
         isOpen: true,
       }
     ]);
+  };
+
+  const handleDeleteBrief = async () => {
+    try {
+      const res = await fetch(`/api/briefs/${params.briefId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        router.push("/dashboard");
+        router.refresh();
+      } else {
+        const data = await res.json();
+        setSaveError(data.error || "删除失败");
+      }
+    } catch (err) {
+      console.error("Failed to delete brief:", err);
+      setSaveError("网络错误，删除失败");
+    }
   };
 
   const handleSave = async (): Promise<boolean> => {
@@ -331,6 +350,32 @@ export default function BriefEditorPage(props: { params: Promise<{ briefId: stri
           className="text-2xl font-semibold tracking-tight bg-transparent focus:outline-none focus:border-b border-black dark:focus:border-white"
         />
         <div className="flex items-center space-x-2">
+          {showDeleteConfirm ? (
+            <div className="flex items-center space-x-2 bg-red-50 dark:bg-red-950/20 border border-red-200/55 dark:border-red-950/50 px-3 py-1.5 rounded-xl animate-fade-in">
+              <span className="text-xs text-red-650 dark:text-red-400 font-medium">确认删除此简报？该操作不可恢复！</span>
+              <button
+                onClick={handleDeleteBrief}
+                className="text-xs px-2.5 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 cursor-pointer font-semibold transition-colors"
+              >
+                确定
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="text-xs px-2.5 py-1 bg-white border border-gray-200 text-black dark:bg-neutral-800 dark:border-neutral-700 dark:text-white rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 cursor-pointer font-semibold transition-colors"
+              >
+                取消
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="flex items-center px-4 py-2 border border-red-200 text-red-500 rounded-lg text-sm hover:bg-red-50 dark:border-red-950 dark:hover:bg-red-950/20 transition-colors cursor-pointer"
+            >
+              <Trash2 size={16} className="mr-1.5" />
+              删除简报
+            </button>
+          )}
+
           <button
             onClick={handleRunNow}
             disabled={isRunning}
@@ -453,7 +498,7 @@ export default function BriefEditorPage(props: { params: Promise<{ briefId: stri
             <div>
               <label className="block text-xs text-neutral-500 mb-1.5 font-medium">接口 Base URL</label>
               <input
-                placeholder="https://api.deepseek.com/v1"
+                placeholder="https://api.deepseek.com"
                 value={llmBaseUrl}
                 onChange={e => setLlmBaseUrl(e.target.value)}
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white dark:bg-[#2c2c2e] dark:border-neutral-700 focus:outline-none"
@@ -462,7 +507,7 @@ export default function BriefEditorPage(props: { params: Promise<{ briefId: stri
             <div>
               <label className="block text-xs text-neutral-500 mb-1.5 font-medium">模型名称 (Model)</label>
               <input
-                placeholder="deepseek-chat"
+                placeholder="deepseek-v4-flash"
                 value={llmModelName}
                 onChange={e => setLlmModelName(e.target.value)}
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white dark:bg-[#2c2c2e] dark:border-neutral-700 focus:outline-none"
@@ -563,7 +608,7 @@ export default function BriefEditorPage(props: { params: Promise<{ briefId: stri
             <div>
               <p className="text-sm font-medium">邮件通知</p>
               <p className="text-xs text-neutral-400 mt-0.5">
-                简报生成后发送邮件到您的账号邮箱。需在 <code className="bg-neutral-200 dark:bg-neutral-700 px-1 rounded text-xs">.env</code> 中配置 <code className="bg-neutral-200 dark:bg-neutral-700 px-1 rounded text-xs">RESEND_API_KEY</code>。
+                简报生成后将自动发送邮件通知至您的账户绑定邮箱。
               </p>
             </div>
             {/* Toggle switch */}

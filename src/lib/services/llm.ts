@@ -6,8 +6,8 @@ export interface LLMConfig {
 
 export async function getLLMSummary(moduleOutputs: string[], config?: LLMConfig): Promise<string> {
   const apiKey = config?.apiKey || process.env.DEEPSEEK_API_KEY;
-  const baseUrl = config?.baseUrl || "https://api.deepseek.com/v1";
-  const modelName = config?.modelName || "deepseek-chat";
+  const baseUrl = config?.baseUrl || "https://api.deepseek.com";
+  const modelName = config?.modelName || "deepseek-v4-flash";
 
   if (!apiKey) {
     return `### Daily Brief (Raw Modules Output)\n\n` + moduleOutputs.join("\n\n");
@@ -62,8 +62,8 @@ export async function getLLMSummary(moduleOutputs: string[], config?: LLMConfig)
 
 export async function llmComplete(prompt: string, config?: LLMConfig): Promise<string> {
   const apiKey = config?.apiKey || process.env.DEEPSEEK_API_KEY;
-  const baseUrl = config?.baseUrl || "https://api.deepseek.com/v1";
-  const modelName = config?.modelName || "deepseek-chat";
+  const baseUrl = config?.baseUrl || "https://api.deepseek.com";
+  const modelName = config?.modelName || "deepseek-v4-flash";
 
   if (!apiKey) {
     const p = prompt.toLowerCase();

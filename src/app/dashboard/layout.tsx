@@ -7,6 +7,7 @@ import { Plus, LogOut, FileText } from "lucide-react";
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [briefs, setBriefs] = useState<any[]>([]);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const router = useRouter();
   const params = useParams();
 
@@ -77,15 +78,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div>
           {/* Header Profile */}
           <div className="p-4 border-b border-gray-200/80 flex items-center justify-between dark:border-neutral-800">
-            <span className="text-sm font-semibold tracking-tight truncate max-w-[140px]">
+            <span className="text-sm font-semibold tracking-tight truncate max-w-[110px]">
               {userEmail || "账户"}
             </span>
-            <button 
-              onClick={handleSignOut} 
-              className="text-neutral-500 hover:text-black dark:hover:text-white cursor-pointer"
-            >
-              <LogOut size={16} />
-            </button>
+            {showSignOutConfirm ? (
+              <div className="flex items-center space-x-1.5 animate-fade-in shrink-0">
+                <button 
+                  onClick={handleSignOut}
+                  className="text-xs px-2 py-0.5 bg-red-500 text-white rounded hover:bg-red-600 cursor-pointer font-medium transition-colors"
+                >
+                  确定
+                </button>
+                <button 
+                  onClick={() => setShowSignOutConfirm(false)}
+                  className="text-xs px-2 py-0.5 bg-neutral-200 text-black dark:bg-neutral-800 dark:text-white rounded hover:bg-neutral-300 dark:hover:bg-neutral-750 cursor-pointer font-medium transition-colors"
+                >
+                  取消
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={() => setShowSignOutConfirm(true)} 
+                className="flex items-center space-x-1 text-xs text-neutral-500 hover:text-red-500 transition-colors cursor-pointer shrink-0"
+              >
+                <LogOut size={14} />
+                <span>登出</span>
+              </button>
+            )}
           </div>
  
           {/* Links */}
