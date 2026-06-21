@@ -179,8 +179,21 @@ export default function BriefEditorPage(props: { params: Promise<{ briefId: stri
           setWechatStatus("success");
           
           if (valModuleIndex !== null) {
-            handleUpdateValue(valModuleIndex, "userId", data.data.userId);
-            handleUpdateValue(valModuleIndex, "tid", data.data.tid);
+            setActiveModules((prev) =>
+              prev.map((m, idx) => {
+                if (idx === valModuleIndex) {
+                  return {
+                    ...m,
+                    values: {
+                      ...m.values,
+                      userId: data.data.userId,
+                      tid: data.data.tid,
+                    },
+                  };
+                }
+                return m;
+              })
+            );
           }
           
           setTimeout(() => {
@@ -282,8 +295,8 @@ export default function BriefEditorPage(props: { params: Promise<{ briefId: stri
   };
 
   const handleUpdateValue = (moduleIndex: number, key: string, value: any) => {
-    setActiveModules(
-      activeModules.map((m, idx) => {
+    setActiveModules((prev) =>
+      prev.map((m, idx) => {
         if (idx === moduleIndex) {
           return {
             ...m,
