@@ -10,7 +10,7 @@ async function main() {
         in: ["weather-module-id", "quote-module-id", "greetings-module-id"],
       },
     },
-  }).catch((err) => console.log("Clean-up warning (can ignore):", err.message));
+  }).catch((err: any) => console.log("Clean-up warning (can ignore):", err.message));
 
   console.log("Inserting 天气 (Weather) module...");
   await prisma.module.create({
