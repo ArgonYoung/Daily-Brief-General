@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
-import { Play, Save, ChevronDown, ChevronUp, Trash2, ArrowUp, ArrowDown, Eye, EyeOff } from "lucide-react";
+import { Play, Save, ChevronDown, ChevronUp, Trash2, ArrowUp, ArrowDown, Eye, EyeOff, QrCode, RefreshCw, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
 // TimeRoller removed in favor of clean dropdown selection
 
@@ -122,6 +122,89 @@ export default function BriefEditorPage(props: { params: Promise<{ briefId: stri
   const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showValHelp, setShowValHelp] = useState(false);
+  const [valModuleIndex, setValModuleIndex] = useState<number | null>(null);
+  const [wechatQrCode, setWechatQrCode] = useState<string | null>(null);
+  const [wechatUuid, setWechatUuid] = useState<string | null>(null);
+  const [wechatStatus, setWechatStatus] = useState<'idle' | 'loading' | 'qr' | 'scanned' | 'success' | 'expired' | 'error'>('idle');
+  const [wechatError, setWechatError] = useState<string | null>(null);
+  const [showManualInstructions, setShowManualInstructions] = useState(false);
+
+  const fetchWechatQr = async () => {
+    try {
+      setWechatStatus("loading");
+      setWechatError(null);
+      setWechatQrCode(null);
+      setWechatUuid(null);
+      
+      const res = await fetch("/api/auth/valorant/qr");
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setWechatQrCode(data.qrCode);
+        setWechatUuid(data.uuid);
+        setWechatStatus("qr");
+      } else {
+        setWechatStatus("error");
+        setWechatError(data.error || "获取二维码失败");
+      }
+    } catch (err: any) {
+      setWechatStatus("error");
+      setWechatError(err?.message || "网络请求失败");
+    }
+  };
+
+  const openWechatLogin = (index: number) => {
+    setValModuleIndex(index);
+    setShowValHelp(true);
+    setShowManualInstructions(false);
+    fetchWechatQr();
+  };
+
+  useEffect(() => {
+    if (!wechatUuid || (wechatStatus !== "qr" && wechatStatus !== "scanned")) {
+      return;
+    }
+
+    let intervalId: NodeJS.Timeout;
+
+    const pollStatus = async () => {
+      try {
+        const res = await fetch(`/api/auth/valorant/poll?uuid=${encodeURIComponent(wechatUuid)}`);
+        const data = await res.json();
+        
+        if (!res.ok) {
+          throw new Error(data.error || "轮询出错");
+        }
+
+        if (data.status === "success") {
+          setWechatStatus("success");
+          
+          if (valModuleIndex !== null) {
+            handleUpdateValue(valModuleIndex, "userId", data.data.userId);
+            handleUpdateValue(valModuleIndex, "tid", data.data.tid);
+          }
+          
+          setTimeout(() => {
+            setShowValHelp(false);
+          }, 1500);
+        } else if (data.status === "scanned") {
+          setWechatStatus("scanned");
+        } else if (data.status === "expired") {
+          setWechatStatus("expired");
+        } else if (data.status === "error") {
+          setWechatStatus("error");
+          setWechatError(data.error || "扫码验证失败");
+        }
+      } catch (err: any) {
+        console.error("Polling error:", err);
+      }
+    };
+
+    intervalId = setInterval(pollStatus, 2000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [wechatUuid, wechatStatus, valModuleIndex]);
 
   // Helper to parse "0 7 * * *" into hour=7, minute=0
   const parseCron = (cron: string) => {
@@ -689,10 +772,10 @@ export default function BriefEditorPage(props: { params: Promise<{ briefId: stri
                         {key === "userId" && (
                           <button
                             type="button"
-                            onClick={() => setShowValHelp(true)}
-                            className="text-[10px] text-neutral-400 hover:text-black dark:hover:text-white underline cursor-pointer"
+                            onClick={() => openWechatLogin(index)}
+                            className="text-[10px] text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 underline cursor-pointer flex items-center gap-1 font-medium"
                           >
-                            如何获取？
+                            <QrCode size={11} /> 扫码登录 / 凭证说明
                           </button>
                         )}
                       </div>
@@ -828,34 +911,139 @@ export default function BriefEditorPage(props: { params: Promise<{ briefId: stri
       {showValHelp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-white dark:bg-[#161618] border border-gray-200 dark:border-neutral-800 rounded-2xl max-w-md w-full shadow-2xl p-6 transform animate-scale-in">
-            <h3 className="text-base font-semibold text-neutral-900 dark:text-white mb-3">
-              如何获取掌盟/掌瓦凭证 (userId & tid)？
-            </h3>
-            <div className="text-xs text-neutral-500 dark:text-neutral-400 space-y-2.5 leading-relaxed">
-              <p>由于掌上无畏契约没有开放官方 API，需要通过在手机端抓包来获取接口所需的登录凭证：</p>
-              <ol className="list-decimal list-inside space-y-1.5 pl-1">
-                <li>准备抓包工具：
-                  <ul className="list-disc list-inside pl-4 text-neutral-400">
-                    <li>iOS 用户推荐使用：<strong>Stream</strong> 或 <strong>HTTP Catcher</strong></li>
-                    <li>Android 用户推荐使用：<strong>HttpCanary</strong></li>
-                    <li>电脑用户可使用：<strong>Fiddler</strong> 或 <strong>Charles</strong></li>
-                  </ul>
-                </li>
-                <li>开启抓包，然后打开手机上的 <strong>“掌上无畏契约”</strong> App，进行一次数据加载（如查看战绩或进入商店）。</li>
-                <li>在抓包工具的请求历史中，搜索或筛选域名：<code className="px-1 py-0.5 bg-neutral-100 dark:bg-neutral-800 rounded text-red-500 font-mono">app.mval.qq.com</code>。</li>
-                <li>选中任意一个请求，查看其 <strong>Request Headers (请求头)</strong> 中的 <code className="px-1 py-0.5 bg-neutral-100 dark:bg-neutral-800 rounded font-mono">Cookie</code> 字段。</li>
-                <li>从 Cookie 中分别复制出 <code className="font-semibold text-neutral-700 dark:text-neutral-300 font-mono">userId=...</code> 和 <code className="font-semibold text-neutral-700 dark:text-neutral-300 font-mono">tid=...</code> 对应的值填入即可。</li>
-              </ol>
-              <div className="p-2.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/50 rounded-xl text-amber-600 dark:text-amber-400 mt-3 text-[11px]">
-                ⚠️ 提示：<code className="font-mono">tid</code> 为临时会话凭证，具有时效性。若简报未来运行历史中报错提示登录凭证失效，需重新抓包获取并更新 tid。
-              </div>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between mb-4 border-b border-gray-100 dark:border-neutral-800 pb-3">
+              <h3 className="text-base font-semibold text-neutral-900 dark:text-white flex items-center space-x-2">
+                <QrCode size={18} className="text-blue-500" />
+                <span>微信扫码登录授权</span>
+              </h3>
+              <button
+                onClick={() => setShowValHelp(false)}
+                className="text-neutral-400 hover:text-black dark:hover:text-white text-sm"
+              >
+                ✕
+              </button>
             </div>
-            <div className="flex justify-end mt-6">
+
+            {/* Modal Body: QR Scanner Area */}
+            <div className="flex flex-col items-center justify-center p-6 bg-neutral-50 dark:bg-neutral-950/20 rounded-2xl border border-gray-150 dark:border-neutral-800/80 mb-4">
+              {wechatStatus === "loading" && (
+                <div className="flex flex-col items-center justify-center space-y-3 py-8">
+                  <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                  <p className="text-xs text-neutral-500">正在生成微信授权二维码...</p>
+                </div>
+              )}
+
+              {(wechatStatus === "qr" || wechatStatus === "scanned" || wechatStatus === "expired") && wechatQrCode && (
+                <div className="relative flex flex-col items-center">
+                  {/* QR Code Container */}
+                  <div className={`relative p-3 bg-white rounded-xl border border-gray-200 shadow-md transition-all duration-300 ${wechatStatus !== "qr" ? "scale-95 opacity-50 blur-[2px]" : ""}`}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={wechatQrCode.startsWith("data:") ? wechatQrCode : `data:image/jpeg;base64,${wechatQrCode}`}
+                      alt="WeChat Login QR"
+                      className="w-48 h-48"
+                    />
+                  </div>
+
+                  {/* Overlay Status for Scanned or Expired */}
+                  {wechatStatus === "scanned" && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center space-y-2 text-center bg-black/5 dark:bg-black/20 rounded-xl">
+                      <div className="p-2.5 bg-blue-500 text-white rounded-full animate-bounce shadow-md">
+                        <Loader2 className="w-6 h-6 animate-spin" />
+                      </div>
+                      <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 bg-white dark:bg-[#161618] px-3 py-1 rounded-full shadow-sm border border-blue-100 dark:border-blue-900/50">
+                        已扫码，请在手机端确认
+                      </span>
+                    </div>
+                  )}
+
+                  {wechatStatus === "expired" && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center space-y-2 text-center bg-black/40 dark:bg-black/60 rounded-xl">
+                      <button
+                        onClick={fetchWechatQr}
+                        className="p-3 bg-white/90 hover:bg-white text-neutral-800 rounded-full shadow-lg transition-all transform hover:scale-105"
+                      >
+                        <RefreshCw className="w-6 h-6" />
+                      </button>
+                      <span className="text-xs font-medium text-white px-2 py-0.5 rounded bg-black/40">
+                        二维码已过期，点击刷新
+                      </span>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-4 text-center">
+                    {wechatStatus === "qr" ? "请使用手机微信扫描上方二维码授权登录" : wechatStatus === "scanned" ? "正在等待微信端确认..." : "二维码已失效"}
+                  </p>
+                </div>
+              )}
+
+              {wechatStatus === "success" && (
+                <div className="flex flex-col items-center justify-center space-y-3 py-8 text-center animate-scale-in">
+                  <div className="p-3 bg-green-50 dark:bg-green-950/30 text-green-500 rounded-full border border-green-200/50 dark:border-green-900/30">
+                    <CheckCircle2 className="w-12 h-12" />
+                  </div>
+                  <h4 className="text-sm font-semibold text-green-600 dark:text-green-400">授权登录成功</h4>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">正在为您自动填入配置项，请稍后...</p>
+                </div>
+              )}
+
+              {wechatStatus === "error" && (
+                <div className="flex flex-col items-center justify-center space-y-3 py-8 text-center animate-scale-in">
+                  <div className="p-3 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-full border border-red-200/50 dark:border-red-900/30">
+                    <XCircle className="w-12 h-12" />
+                  </div>
+                  <h4 className="text-sm font-semibold text-red-600 dark:text-red-400">授权获取失败</h4>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 max-w-xs">{wechatError || "未知错误"}</p>
+                  <button
+                    onClick={fetchWechatQr}
+                    className="mt-2 px-3 py-1.5 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 text-xs font-semibold rounded-lg transition-all"
+                  >
+                    重新获取二维码
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Collapsible Manual Option */}
+            <div className="border border-gray-150 dark:border-neutral-800 rounded-xl overflow-hidden mb-4">
+              <button
+                type="button"
+                onClick={() => setShowManualInstructions(!showManualInstructions)}
+                className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-900/40 text-left text-xs font-medium text-neutral-600 dark:text-neutral-400 flex items-center justify-between hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-all"
+              >
+                <span>需要手动抓包配置？查看教程</span>
+                <span>{showManualInstructions ? "收起" : "展开"}</span>
+              </button>
+              {showManualInstructions && (
+                <div className="p-4 border-t border-gray-150 dark:border-neutral-800 text-[11px] text-neutral-500 dark:text-neutral-400 space-y-2.5 leading-relaxed bg-white dark:bg-[#161618]">
+                  <p>由于掌上无畏契约没有开放官方 API，如果扫码异常，可以通过在手机端抓包来获取接口所需的登录凭证：</p>
+                  <ol className="list-decimal list-inside space-y-1.5 pl-1">
+                    <li>准备抓包工具：
+                      <ul className="list-disc list-inside pl-4 text-neutral-400">
+                        <li>iOS 用户推荐使用：<strong>Stream</strong> 或 <strong>HTTP Catcher</strong></li>
+                        <li>Android 用户推荐使用：<strong>HttpCanary</strong></li>
+                        <li>电脑用户可使用：<strong>Fiddler</strong> 或 <strong>Charles</strong></li>
+                      </ul>
+                    </li>
+                    <li>开启抓包，然后打开手机上的 <strong>“掌上无畏契约”</strong> App，进行一次数据加载（如查看战绩或进入商店）。</li>
+                    <li>在抓包工具的请求历史中，搜索或筛选域名：<code className="px-1 py-0.5 bg-neutral-100 dark:bg-neutral-800 rounded text-red-500 font-mono">app.mval.qq.com</code>。</li>
+                    <li>选中任意一个请求，查看其 <strong>Request Headers (请求头)</strong> 中的 <code className="px-1 py-0.5 bg-neutral-100 dark:bg-neutral-800 rounded font-mono">Cookie</code> 字段。</li>
+                    <li>从 Cookie 中分别复制出 <code className="font-semibold text-neutral-700 dark:text-neutral-300 font-mono">userId=...</code> 和 <code className="font-semibold text-neutral-700 dark:text-neutral-300 font-mono">tid=...</code> 对应的值填入即可。</li>
+                  </ol>
+                  <div className="p-2.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/50 rounded-xl text-amber-600 dark:text-amber-400 mt-3">
+                    ⚠️ 提示：<code className="font-mono text-[10px]">tid</code> 为临时会话凭证，具有时效性。若简报未来运行历史中报错提示登录凭证失效，需重新扫码获取或重新抓包。
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end">
               <button
                 onClick={() => setShowValHelp(false)}
                 className="px-4 py-2 bg-neutral-900 hover:bg-black dark:bg-white dark:text-black dark:hover:bg-neutral-100 text-sm font-semibold rounded-xl text-white transition-all cursor-pointer"
               >
-                我知道了
+                关闭
               </button>
             </div>
           </div>
