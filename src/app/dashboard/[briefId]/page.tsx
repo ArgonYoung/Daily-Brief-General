@@ -3,100 +3,7 @@ import React, { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { Play, Save, ChevronDown, ChevronUp, Trash2, ArrowUp, ArrowDown, Eye, EyeOff } from "lucide-react";
 
-interface TimeRollerProps {
-  value: number;
-  onChange: (val: number) => void;
-  max: number;
-  label: string;
-}
-
-function TimeRoller({ value, onChange, max, label }: TimeRollerProps) {
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const isScrollingRef = React.useRef(false);
-  const itemHeight = 32; // height of each item in px (h-8)
-
-  // Scroll to active item on mount or external value change
-  useEffect(() => {
-    const container = containerRef.current;
-    if (container && !isScrollingRef.current) {
-      const targetScrollTop = value * itemHeight;
-      if (container.scrollTop !== targetScrollTop) {
-        container.scrollTo({ top: targetScrollTop });
-      }
-    }
-  }, [value]);
-
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const container = e.currentTarget;
-    isScrollingRef.current = true;
-    
-    // Clear timeout if any to detect when scroll ends
-    const timer = (container as any)._scrollTimer;
-    if (timer) clearTimeout(timer);
-    
-    const calculateValue = () => {
-      const scrollOffset = container.scrollTop;
-      const index = Math.round(scrollOffset / itemHeight);
-      const newValue = Math.max(0, Math.min(max, index));
-      if (newValue !== value) {
-        onChange(newValue);
-      }
-      isScrollingRef.current = false;
-    };
-
-    // Debounce the final scroll snap position or handle scroll end
-    (container as any)._scrollTimer = setTimeout(() => {
-      calculateValue();
-      // Snap to perfect center
-      const targetScrollTop = Math.round(container.scrollTop / itemHeight) * itemHeight;
-      container.scrollTo({ top: targetScrollTop, behavior: "smooth" });
-    }, 150);
-  };
-
-  const options = Array.from({ length: max + 1 }).map((_, i) => i);
-
-  return (
-    <div className="flex flex-col items-center">
-      <span className="text-[10px] uppercase tracking-wider text-neutral-400 font-semibold mb-1">{label}</span>
-      <div className="relative w-14 h-[120px] bg-white border border-gray-200/80 rounded-xl dark:bg-[#1c1c1e] dark:border-neutral-800 overflow-hidden">
-        {/* Gradients */}
-        <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white to-transparent pointer-events-none dark:from-[#1c1c1e] z-10" />
-        <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none dark:from-[#1c1c1e] z-10" />
-        
-        {/* Highlight center bar */}
-        <div className="absolute top-[44px] left-0 right-0 h-8 border-y border-neutral-200/60 bg-neutral-50/50 dark:border-neutral-700/60 dark:bg-neutral-800/20 pointer-events-none z-0" />
-        
-        {/* Scrollable Container */}
-        <div
-          ref={containerRef}
-          onScroll={handleScroll}
-          className="h-full overflow-y-scroll snap-y snap-mandatory no-scrollbar py-[44px] z-5 relative"
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-        >
-          {options.map((opt) => {
-            const isSelected = opt === value;
-            return (
-              <div
-                key={opt}
-                onClick={() => {
-                  onChange(opt);
-                  containerRef.current?.scrollTo({ top: opt * itemHeight, behavior: "smooth" });
-                }}
-                className={`snap-center h-8 flex items-center justify-center text-sm font-medium transition-colors cursor-pointer ${
-                  isSelected 
-                    ? "text-black dark:text-white font-semibold scale-110" 
-                    : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
-                }`}
-              >
-                {String(opt).padStart(2, "0")}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
+// TimeRoller removed in favor of clean dropdown selection
 
 interface CityAutocompleteProps {
   value: string;
@@ -212,6 +119,7 @@ export default function BriefEditorPage(props: { params: Promise<{ briefId: stri
   const [isRunning, setIsRunning] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
 
   // Helper to parse "0 7 * * *" into hour=7, minute=0
   const parseCron = (cron: string) => {
@@ -452,31 +360,70 @@ export default function BriefEditorPage(props: { params: Promise<{ briefId: stri
       <div className="space-y-4">
         <h3 className="text-lg font-semibold tracking-tight">日程与运行设置</h3>
         <div className="p-5 bg-[#f5f5f7] rounded-2xl border border-gray-200/80 space-y-4 dark:bg-[#161618] dark:border-neutral-800">
-          <div className="flex space-x-6 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
             <div>
               <label className="block text-xs text-neutral-500 mb-2 font-medium">每日触发时间</label>
-              <div className="flex items-center space-x-3 bg-white border border-gray-200/80 rounded-2xl p-4 w-fit dark:bg-[#1c1c1e] dark:border-neutral-800">
-                <TimeRoller
-                  value={hour}
-                  onChange={(val) => handleTimeChange("hour", val)}
-                  max={23}
-                  label="时"
-                />
-                <span className="text-xl text-neutral-300 font-semibold mt-4">:</span>
-                <TimeRoller
-                  value={minute}
-                  onChange={(val) => handleTimeChange("minute", val)}
-                  max={59}
-                  label="分"
-                />
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsTimePickerOpen(!isTimePickerOpen)}
+                  className="flex items-center justify-between w-full md:w-48 px-4 py-2.5 bg-white border border-gray-200/80 rounded-xl text-sm font-semibold text-black hover:bg-neutral-50 dark:bg-[#1c1c1e] dark:border-neutral-800 dark:text-white dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                >
+                  <span>{String(hour).padStart(2, "0")} : {String(minute).padStart(2, "0")}</span>
+                  <ChevronDown size={16} className="text-neutral-400" />
+                </button>
+                
+                {isTimePickerOpen && (
+                  <>
+                    {/* Backdrop to close click outside */}
+                    <div className="fixed inset-0 z-40" onClick={() => setIsTimePickerOpen(false)} />
+                    
+                    <div className="absolute left-0 mt-2 p-4 bg-white border border-gray-200 rounded-2xl shadow-xl dark:bg-[#1c1c1e] dark:border-neutral-800 z-50 flex items-center space-x-3 w-[180px]">
+                      {/* Hour Select */}
+                      <div className="flex-1 flex flex-col">
+                        <span className="text-[10px] text-neutral-400 font-semibold mb-1 text-center">时</span>
+                        <select
+                          value={hour}
+                          onChange={(e) => {
+                            handleTimeChange("hour", parseInt(e.target.value, 10));
+                          }}
+                          className="rounded-lg border border-gray-200 px-2 py-1.5 text-sm bg-white dark:bg-[#2c2c2e] dark:border-neutral-700 focus:outline-none cursor-pointer text-center"
+                        >
+                          {Array.from({ length: 24 }).map((_, i) => (
+                            <option key={i} value={i}>{String(i).padStart(2, "0")}</option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      <span className="text-lg font-bold text-neutral-300 dark:text-neutral-700 mt-4">:</span>
+                      
+                      {/* Minute Select */}
+                      <div className="flex-1 flex flex-col">
+                        <span className="text-[10px] text-neutral-400 font-semibold mb-1 text-center">分</span>
+                        <select
+                          value={minute}
+                          onChange={(e) => {
+                            handleTimeChange("minute", parseInt(e.target.value, 10));
+                          }}
+                          className="rounded-lg border border-gray-200 px-2 py-1.5 text-sm bg-white dark:bg-[#2c2c2e] dark:border-neutral-700 focus:outline-none cursor-pointer text-center"
+                        >
+                          {Array.from({ length: 60 }).map((_, i) => (
+                            <option key={i} value={i}>{String(i).padStart(2, "0")}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
+            
             <div className="flex-1">
               <label className="block text-xs text-neutral-500 mb-2 font-medium">时区</label>
               <select
                 value={timezone}
                 onChange={e => setTimezone(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white dark:bg-[#2c2c2e] dark:border-neutral-700 focus:outline-none cursor-pointer"
+                className="w-full rounded-xl border border-gray-200/80 px-4 py-2.5 text-sm bg-white dark:bg-[#1c1c1e] dark:border-neutral-800 dark:text-white focus:outline-none cursor-pointer"
               >
                 <option value="Asia/Shanghai">Asia/Shanghai (北京时间)</option>
                 <option value="Asia/Hong_Kong">Asia/Hong_Kong (香港时间)</option>
