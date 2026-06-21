@@ -1,0 +1,92 @@
+datasource db {
+  provider = "sqlite"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                 String               @id @default(uuid())
+  email              String               @unique
+  passwordHash       String
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  moduleConfigs      UserModuleConfig[]
+  briefSchedules     BriefSchedule[]
+}
+
+model Module {
+  id           String               @id @default(uuid())
+  name         String
+  description  String
+  code         String               // JavaScript ES Module code
+  configSchema Json                 // JSON Schema defining expected inputs
+  isOfficial   Boolean              @default(false)
+  authorId     String?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  mappings     BriefModuleMapping[]
+  configs      UserModuleConfig[]
+}
+
+model UserModuleConfig {
+  id        String               @id @default(uuid())
+  userId    String
+  moduleId  String
+  values    Json                 // Config values, e.g., { "city": "London" }
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module    Module               @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  mappings  BriefModuleMapping[]
+}
+
+model BriefSchedule {
+  id                    String               @id @default(uuid())
+  userId                String
+  name                  String               // e.g. "Morning Brief"
+  cronExpression        String               // e.g. "0 7 * * *" (runs daily at 7 AM)
+  timezone              String               // e.g. "Asia/Shanghai"
+  notionPageId          String
+  notionTokenEncrypted  String
+  isEnabled             Boolean              @default(true)
+  llmBaseUrl            String               @default("https://api.deepseek.com/v1")
+  llmModelName          String               @default("deepseek-chat")
+  llmApiKeyEncrypted    String               @default("")
+  userName              String               @default("")
+  aiPersona             String               @default("")
+  emailEnabled          Boolean              @default(false)
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mappings              BriefModuleMapping[]
+  logs                  BriefLog[]
+}
+
+model BriefModuleMapping {
+  id                 String           @id @default(uuid())
+  briefScheduleId    String
+  userModuleConfigId String
+  moduleId           String
+  sortOrder          Int
+  briefSchedule      BriefSchedule    @relation(fields: [briefScheduleId], references: [id], onDelete: Cascade)
+  userModuleConfig   UserModuleConfig @relation(fields: [userModuleConfigId], references: [id], onDelete: Cascade)
+  module             Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+}
+
+model BriefLog {
+  id              String        @id @default(uuid())
+  briefScheduleId String
+  triggeredAt     DateTime      @default(now())
+  status          String        // SUCCESS | FAILED
+  errorMessage    String?
+  briefSchedule   BriefSchedule @relation(fields: [briefScheduleId], references: [id], onDelete: Cascade)
+}
+
+model City {
+  id      String @id @default(uuid())
+  name    String @unique
+  pinyin  String
+  country String
+}
