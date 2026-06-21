@@ -121,6 +121,7 @@ export default function BriefEditorPage(props: { params: Promise<{ briefId: stri
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showValHelp, setShowValHelp] = useState(false);
 
   // Helper to parse "0 7 * * *" into hour=7, minute=0
   const parseCron = (cron: string) => {
@@ -658,7 +659,7 @@ export default function BriefEditorPage(props: { params: Promise<{ briefId: stri
                   </div>
                   <div>
                     <h4 className="font-semibold text-sm">{mod.name}</h4>
-                    <p className="text-xs text-neutral-400 truncate max-w-[400px]">{mod.description}</p>
+                    <p className="text-xs text-neutral-400">{mod.description}</p>
                   </div>
                 </div>
 
@@ -683,7 +684,18 @@ export default function BriefEditorPage(props: { params: Promise<{ briefId: stri
                 <div className="pt-4 border-t border-gray-100 dark:border-neutral-700 space-y-3">
                   {Object.entries(mod.configSchema || {}).map(([key, schemaVal]: [string, any]) => (
                     <div key={key} className="space-y-1">
-                      <label className="block text-xs font-medium text-neutral-500">{schemaVal.label || key}</label>
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-medium text-neutral-500">{schemaVal.label || key}</label>
+                        {key === "userId" && (
+                          <button
+                            type="button"
+                            onClick={() => setShowValHelp(true)}
+                            className="text-[10px] text-neutral-400 hover:text-black dark:hover:text-white underline cursor-pointer"
+                          >
+                            如何获取？
+                          </button>
+                        )}
+                      </div>
                       {schemaVal.type === "boolean" ? (
                         <input
                           type="checkbox"
@@ -806,6 +818,44 @@ export default function BriefEditorPage(props: { params: Promise<{ briefId: stri
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-sm font-medium rounded-xl text-white transition-all cursor-pointer shadow-sm shadow-red-500/10"
               >
                 确认删除
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Valorant Help Modal */}
+      {showValHelp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white dark:bg-[#161618] border border-gray-200 dark:border-neutral-800 rounded-2xl max-w-md w-full shadow-2xl p-6 transform animate-scale-in">
+            <h3 className="text-base font-semibold text-neutral-900 dark:text-white mb-3">
+              如何获取掌盟/掌瓦凭证 (userId & tid)？
+            </h3>
+            <div className="text-xs text-neutral-500 dark:text-neutral-400 space-y-2.5 leading-relaxed">
+              <p>由于掌上无畏契约没有开放官方 API，需要通过在手机端抓包来获取接口所需的登录凭证：</p>
+              <ol className="list-decimal list-inside space-y-1.5 pl-1">
+                <li>准备抓包工具：
+                  <ul className="list-disc list-inside pl-4 text-neutral-400">
+                    <li>iOS 用户推荐使用：<strong>Stream</strong> 或 <strong>HTTP Catcher</strong></li>
+                    <li>Android 用户推荐使用：<strong>HttpCanary</strong></li>
+                    <li>电脑用户可使用：<strong>Fiddler</strong> 或 <strong>Charles</strong></li>
+                  </ul>
+                </li>
+                <li>开启抓包，然后打开手机上的 <strong>“掌上无畏契约”</strong> App，进行一次数据加载（如查看战绩或进入商店）。</li>
+                <li>在抓包工具的请求历史中，搜索或筛选域名：<code className="px-1 py-0.5 bg-neutral-100 dark:bg-neutral-800 rounded text-red-500 font-mono">app.mval.qq.com</code>。</li>
+                <li>选中任意一个请求，查看其 <strong>Request Headers (请求头)</strong> 中的 <code className="px-1 py-0.5 bg-neutral-100 dark:bg-neutral-800 rounded font-mono">Cookie</code> 字段。</li>
+                <li>从 Cookie 中分别复制出 <code className="font-semibold text-neutral-700 dark:text-neutral-300 font-mono">userId=...</code> 和 <code className="font-semibold text-neutral-700 dark:text-neutral-300 font-mono">tid=...</code> 对应的值填入即可。</li>
+              </ol>
+              <div className="p-2.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/50 rounded-xl text-amber-600 dark:text-amber-400 mt-3 text-[11px]">
+                ⚠️ 提示：<code className="font-mono">tid</code> 为临时会话凭证，具有时效性。若简报未来运行历史中报错提示登录凭证失效，需重新抓包获取并更新 tid。
+              </div>
+            </div>
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => setShowValHelp(false)}
+                className="px-4 py-2 bg-neutral-900 hover:bg-black dark:bg-white dark:text-black dark:hover:bg-neutral-100 text-sm font-semibold rounded-xl text-white transition-all cursor-pointer"
+              >
+                我知道了
               </button>
             </div>
           </div>
