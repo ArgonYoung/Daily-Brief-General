@@ -67,8 +67,28 @@ export async function runSandbox(
     // sdk.fetch(url)
     const sdkFetch = createAsyncFunction(
       "fetch",
-      async (url, optionsJson) => {
-        const options = optionsJson ? JSON.parse(optionsJson) : undefined;
+      async (url, optionsArg) => {
+        let options: any = undefined;
+        if (optionsArg) {
+          if (typeof optionsArg === "string") {
+            try {
+              options = JSON.parse(optionsArg);
+            } catch {
+              options = undefined;
+            }
+          } else if (typeof optionsArg === "object") {
+            options = optionsArg;
+          }
+        }
+
+        if (options && typeof options.headers === "string") {
+          try {
+            options.headers = JSON.parse(options.headers);
+          } catch (e) {
+            // ignore
+          }
+        }
+
         const response = await sdk.fetch(url, options);
         const text = await response.text();
         const status = response.status;

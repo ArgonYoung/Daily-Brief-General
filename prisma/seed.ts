@@ -229,7 +229,7 @@ async function main() {
     try {
       const res = await sdk.fetch(url, {
         method: "POST",
-        headers: JSON.stringify(headers),
+        headers: headers,
         body: JSON.stringify({ _t: timestamp })
       });
       
