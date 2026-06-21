@@ -36,6 +36,22 @@ function markdownToNotionBlocks(markdown: string): any[] {
       continue; // Skip empty lines to keep it compact
     }
 
+    const imageMatch = line.match(/^!\[([^\]]*)\]\((https?:\/\/[^\)]+)\)/);
+    if (imageMatch) {
+      const url = imageMatch[2];
+      blocks.push({
+        object: "block",
+        type: "image",
+        image: {
+          type: "external",
+          external: {
+            url: url,
+          },
+        },
+      });
+      continue;
+    }
+
     if (line.startsWith("###")) {
       blocks.push({
         object: "block",

@@ -253,16 +253,16 @@ async function main() {
       }
       
       // 1. 构造 Markdown 格式排版 (由模块控制)
-      let content = "#### 🔫 无畏契约每日商店\\n\\n";
+      let content = "";
       const itemsInfo = [];
       
       goodsList.forEach((goods, index) => {
-        const name = goods.goods_name || "未知皮肤";
+        const name = (goods.goods_name || "未知皮肤").replace(/\\/\\//g, " ");
         const price = goods.rmb_price || "0";
         const pic = goods.goods_pic || "";
-        content += (index + 1) + ". **" + name + "** (" + price + " VP)\\n";
+        content += "- **" + name + "** (" + price + " VP)\\n";
         if (pic) {
-          content += "   ![" + name + "](" + pic + ")\\n";
+          content += "![" + name + "](" + pic + ")\\n";
         }
         itemsInfo.push(name + " (价格: " + price + " VP)");
       });
@@ -274,7 +274,7 @@ async function main() {
         "要求：语气幽默生动，专业犀利，总字数控制在150字以内，直接输出段落内容，不要有任何多余的引言或代码框。";
         
       const aiReview = await sdk.llm.complete(prompt);
-      content += "\\n**🤖 AI 每日皮肤测评：**\\n> " + aiReview;
+      content += "\\n**AI 每日皮肤测评：**\\n> " + aiReview;
       
       return content;
     } catch (err) {
