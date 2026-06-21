@@ -81,30 +81,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <span className="text-sm font-semibold tracking-tight truncate max-w-[110px]">
               {userEmail || "账户"}
             </span>
-            {showSignOutConfirm ? (
-              <div className="flex items-center space-x-1.5 animate-fade-in shrink-0">
-                <button 
-                  onClick={handleSignOut}
-                  className="text-xs px-2 py-0.5 bg-red-500 text-white rounded hover:bg-red-600 cursor-pointer font-medium transition-colors"
-                >
-                  确定
-                </button>
-                <button 
-                  onClick={() => setShowSignOutConfirm(false)}
-                  className="text-xs px-2 py-0.5 bg-neutral-200 text-black dark:bg-neutral-800 dark:text-white rounded hover:bg-neutral-300 dark:hover:bg-neutral-750 cursor-pointer font-medium transition-colors"
-                >
-                  取消
-                </button>
-              </div>
-            ) : (
-              <button 
-                onClick={() => setShowSignOutConfirm(true)} 
-                className="flex items-center space-x-1 text-xs text-neutral-500 hover:text-red-500 transition-colors cursor-pointer shrink-0"
-              >
-                <LogOut size={14} />
-                <span>登出</span>
-              </button>
-            )}
+            <button 
+              onClick={() => setShowSignOutConfirm(true)} 
+              className="flex items-center space-x-1 text-xs text-neutral-500 hover:text-red-500 transition-colors cursor-pointer shrink-0"
+            >
+              <LogOut size={14} className="mr-0.5" />
+              <span>登出</span>
+            </button>
           </div>
  
           {/* Links */}
@@ -148,6 +131,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main Container */}
       <main className="flex-1 overflow-hidden">{children}</main>
+
+      {/* Sign Out Confirmation Modal */}
+      {showSignOutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white dark:bg-[#161618] border border-gray-200 dark:border-neutral-800 rounded-2xl max-w-sm w-full shadow-2xl p-6 transform animate-scale-in">
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="p-2.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-355 rounded-xl">
+                <LogOut size={20} />
+              </div>
+              <h3 className="text-base font-semibold text-neutral-900 dark:text-white">
+                确认退出登录？
+              </h3>
+            </div>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6 leading-relaxed">
+              退出登录后，您将需要重新验证凭证以继续使用该系统。
+            </p>
+            <div className="flex items-center justify-end space-x-2.5">
+              <button
+                onClick={() => setShowSignOutConfirm(false)}
+                className="px-4 py-2 border border-gray-200 dark:border-neutral-850 text-sm font-medium rounded-xl text-neutral-600 hover:bg-neutral-50 hover:text-black dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-white transition-all cursor-pointer"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleSignOut}
+                className="px-4 py-2 bg-black hover:bg-neutral-850 dark:bg-white dark:text-black dark:hover:bg-neutral-100 text-sm font-medium rounded-xl text-white transition-all cursor-pointer shadow-sm shadow-neutral-950/5"
+              >
+                确认登出
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

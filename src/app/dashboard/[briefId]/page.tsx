@@ -249,8 +249,8 @@ export default function BriefEditorPage(props: { params: Promise<{ briefId: stri
         method: "DELETE",
       });
       if (res.ok) {
+        window.dispatchEvent(new CustomEvent("brief-updated"));
         router.push("/dashboard");
-        router.refresh();
       } else {
         const data = await res.json();
         setSaveError(data.error || "删除失败");
@@ -350,31 +350,13 @@ export default function BriefEditorPage(props: { params: Promise<{ briefId: stri
           className="text-2xl font-semibold tracking-tight bg-transparent focus:outline-none focus:border-b border-black dark:focus:border-white"
         />
         <div className="flex items-center space-x-2">
-          {showDeleteConfirm ? (
-            <div className="flex items-center space-x-2 bg-red-50 dark:bg-red-950/20 border border-red-200/55 dark:border-red-950/50 px-3 py-1.5 rounded-xl animate-fade-in">
-              <span className="text-xs text-red-650 dark:text-red-400 font-medium">确认删除此简报？该操作不可恢复！</span>
-              <button
-                onClick={handleDeleteBrief}
-                className="text-xs px-2.5 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 cursor-pointer font-semibold transition-colors"
-              >
-                确定
-              </button>
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="text-xs px-2.5 py-1 bg-white border border-gray-200 text-black dark:bg-neutral-800 dark:border-neutral-700 dark:text-white rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 cursor-pointer font-semibold transition-colors"
-              >
-                取消
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="flex items-center px-4 py-2 border border-red-200 text-red-500 rounded-lg text-sm hover:bg-red-50 dark:border-red-950 dark:hover:bg-red-950/20 transition-colors cursor-pointer"
-            >
-              <Trash2 size={16} className="mr-1.5" />
-              删除简报
-            </button>
-          )}
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="flex items-center px-4 py-2 border border-red-200 text-red-500 rounded-lg text-sm hover:bg-red-50 dark:border-red-950 dark:hover:bg-red-950/20 transition-colors cursor-pointer"
+          >
+            <Trash2 size={16} className="mr-1.5" />
+            删除简报
+          </button>
 
           <button
             onClick={handleRunNow}
@@ -796,6 +778,39 @@ export default function BriefEditorPage(props: { params: Promise<{ briefId: stri
           </table>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white dark:bg-[#161618] border border-gray-200 dark:border-neutral-800 rounded-2xl max-w-md w-full shadow-2xl p-6 transform animate-scale-in">
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="p-2.5 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-xl">
+                <Trash2 size={20} />
+              </div>
+              <h3 className="text-base font-semibold text-neutral-900 dark:text-white">
+                确认删除此简报？
+              </h3>
+            </div>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6 leading-relaxed">
+              此操作将永久删除简报 <span className="font-semibold text-neutral-800 dark:text-white">“{briefName}”</span> 及其所有关联的配置，该操作不可恢复！
+            </p>
+            <div className="flex items-center justify-end space-x-2.5">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 border border-gray-200 dark:border-neutral-800 text-sm font-medium rounded-xl text-neutral-600 hover:bg-neutral-50 hover:text-black dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-white transition-all cursor-pointer"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleDeleteBrief}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-sm font-medium rounded-xl text-white transition-all cursor-pointer shadow-sm shadow-red-500/10"
+              >
+                确认删除
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
