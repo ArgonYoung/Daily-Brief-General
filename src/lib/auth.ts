@@ -57,9 +57,12 @@ export function getSessionUser(req: NextRequest): { id: string; email: string } 
 // Set session cookie on response
 export function setSessionCookie(res: NextResponse, user: { id: string; email: string }) {
   const token = encryptSession(user);
+  const isSecure = process.env.COOKIE_SECURE === "true" || 
+    (process.env.NODE_ENV === "production" && process.env.COOKIE_SECURE !== "false");
+
   res.cookies.set("session", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isSecure,
     sameSite: "lax",
     maxAge: 60 * 60 * 24 * 7, // 1 week
     path: "/",
@@ -68,9 +71,12 @@ export function setSessionCookie(res: NextResponse, user: { id: string; email: s
 
 // Clear session cookie
 export function clearSessionCookie(res: NextResponse) {
+  const isSecure = process.env.COOKIE_SECURE === "true" || 
+    (process.env.NODE_ENV === "production" && process.env.COOKIE_SECURE !== "false");
+
   res.cookies.set("session", "", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isSecure,
     sameSite: "lax",
     maxAge: 0,
     path: "/",
