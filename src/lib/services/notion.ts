@@ -42,54 +42,58 @@ function markdownToNotionBlocks(markdown: string): any[] {
       blocks.push({
         object: "block",
         type: "column_list",
-        column_list: {},
-        children: [
-          {
-            object: "block",
-            type: "column",
-            column: {},
-            children: [
-              {
-                object: "block",
-                type: "image",
-                image: {
-                  type: "external",
-                  external: {
-                    url: url,
-                  },
-                },
-              }
-            ],
-          },
-          {
-            object: "block",
-            type: "column",
-            column: {},
-            children: [
-              {
-                object: "block",
-                type: "paragraph",
-                paragraph: {
-                  rich_text: [],
-                },
-              }
-            ],
-          },
-          {
-            object: "block",
-            type: "column",
-            column: {},
-            children: [
-              {
-                object: "block",
-                type: "paragraph",
-                paragraph: {
-                  rich_text: [],
-                },
-              }
-            ],
-          }
-        ],
+        column_list: {
+          children: [
+            {
+              object: "block",
+              type: "column",
+              column: {
+                children: [
+                  {
+                    object: "block",
+                    type: "image",
+                    image: {
+                      type: "external",
+                      external: {
+                        url: url,
+                      },
+                    },
+                  }
+                ],
+              },
+            },
+            {
+              object: "block",
+              type: "column",
+              column: {
+                children: [
+                  {
+                    object: "block",
+                    type: "paragraph",
+                    paragraph: {
+                      rich_text: [],
+                    },
+                  }
+                ],
+              },
+            },
+            {
+              object: "block",
+              type: "column",
+              column: {
+                children: [
+                  {
+                    object: "block",
+                    type: "paragraph",
+                    paragraph: {
+                      rich_text: [],
+                    },
+                  }
+                ],
+              },
+            }
+          ],
+        },
       });
       continue;
     }
