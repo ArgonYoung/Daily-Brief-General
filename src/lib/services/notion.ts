@@ -41,13 +41,55 @@ function markdownToNotionBlocks(markdown: string): any[] {
       const url = imageMatch[2];
       blocks.push({
         object: "block",
-        type: "image",
-        image: {
-          type: "external",
-          external: {
-            url: url,
+        type: "column_list",
+        column_list: {},
+        children: [
+          {
+            object: "block",
+            type: "column",
+            column: {},
+            children: [
+              {
+                object: "block",
+                type: "image",
+                image: {
+                  type: "external",
+                  external: {
+                    url: url,
+                  },
+                },
+              }
+            ],
           },
-        },
+          {
+            object: "block",
+            type: "column",
+            column: {},
+            children: [
+              {
+                object: "block",
+                type: "paragraph",
+                paragraph: {
+                  rich_text: [],
+                },
+              }
+            ],
+          },
+          {
+            object: "block",
+            type: "column",
+            column: {},
+            children: [
+              {
+                object: "block",
+                type: "paragraph",
+                paragraph: {
+                  rich_text: [],
+                },
+              }
+            ],
+          }
+        ],
       });
       continue;
     }
