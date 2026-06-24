@@ -83,6 +83,7 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ id: strin
         llmApiKeyEncrypted: data.llmApiKeyEncrypted,
         userName: data.userName ?? "",
         aiPersona: data.aiPersona ?? "",
+        closingEnabled: data.closingEnabled ?? true,
         emailEnabled: data.emailEnabled ?? false,
       },
     });
