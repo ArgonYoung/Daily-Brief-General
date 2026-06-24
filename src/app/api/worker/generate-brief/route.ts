@@ -10,6 +10,7 @@ export async function POST(req: NextRequest) {
 
     const schedule = await prisma.briefSchedule.findUnique({
       where: { id: briefScheduleId },
+      include: { user: true },
     });
 
     if (!schedule) {
