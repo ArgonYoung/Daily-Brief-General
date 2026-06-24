@@ -123,9 +123,13 @@ ${resultsTextList.join("\n")}`;
     closing = closing.replace(/^["'""]/g, "").replace(/["'""]$/g, "");
   }
 
-  // 4. Title
-  const dateStr = new Date().toLocaleDateString("zh-CN", { timeZone: schedule.timezone });
-  const title = `${schedule.name} (${dateStr})`;
+  // 4. Title — fixed format: "2026年6月24日 简报"
+  const now = new Date();
+  const tzDate = new Date(now.toLocaleString("en-US", { timeZone: schedule.timezone }));
+  const year = tzDate.getFullYear();
+  const month = tzDate.getMonth() + 1;
+  const day = tzDate.getDate();
+  const title = `${year}年${month}月${day}日 简报`;
 
   return {
     title,
